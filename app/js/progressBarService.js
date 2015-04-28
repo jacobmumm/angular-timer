@@ -1,6 +1,4 @@
-var app = angular.module('timer');
-
-app.factory('progressBarService', function() {
+angular.module('timer').factory('progressBarService', function() {
 
   var ProgressBarService = function() {};
 

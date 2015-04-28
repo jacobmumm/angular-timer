@@ -6,12 +6,11 @@
   "description": "Angular-Timer : A simple AngularJS directive demonstrating re-usability & interoperability",
   "repository": {
     "type": "git",
-    "url": "git://github.com/siddii/angular-timer.git"
+    "url": "git@github.com:jacobmumm/angular-timer.git"
   },
   "dependencies": {
     "angular": ">= 1.0.7",
-    "momentjs": "~2.9.0",
-    "humanize-duration": "~2.4.0"
+    "momentjs": "~2.5.0"
   },
   "devDependencies": {
     "bootstrap": "2.3.2",
