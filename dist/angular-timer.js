@@ -1,11 +1,11 @@
 /**
- * angular-timer - v1.3.1 - 2015-03-30 1:00 PM
+ * angular-timer - v1.3.1 - 2015-04-28 6:17 PM
  * https://github.com/siddii/angular-timer
  *
  * Copyright (c) 2015 Siddique Hameed
  * Licensed MIT <https://github.com/siddii/angular-timer/blob/master/LICENSE.txt>
  */
-var timerModule = angular.module('timer', [])
+angular.module('timer', [])
   .directive('timer', ['$compile', function ($compile) {
     return  {
       restrict: 'EA',
@@ -18,38 +18,15 @@ var timerModule = angular.module('timer', [])
         finishCallback: '&finishCallback',
         autoStart: '&autoStart',
         language: '@?',
+        timeUnits: '=',
         maxTimeUnit: '='
       },
-      controller: ['$scope', '$element', '$attrs', '$timeout', 'I18nService', '$interpolate', 'progressBarService', function ($scope, $element, $attrs, $timeout, I18nService, $interpolate, progressBarService) {
-
-        // Checking for trim function since IE8 doesn't have it
-        // If not a function, create tirm with RegEx to mimic native trim
-        if (typeof String.prototype.trim !== 'function') {
-          String.prototype.trim = function () {
-            return this.replace(/^\s+|\s+$/g, '');
-          };
-        }
+      controller: ['$scope', '$element', '$attrs', '$timeout', '$interpolate', function ($scope, $element, $attrs, $timeout, $interpolate) {
 
         //angular 1.2 doesn't support attributes ending in "-start", so we're
         //supporting both "autostart" and "auto-start" as a solution for
         //backward and forward compatibility.
         $scope.autoStart = $attrs.autoStart || $attrs.autostart;
-
-
-        $scope.language = $scope.language || 'en';
-
-        //allow to change the language of the directive while already launched
-        $scope.$watch('language', function() {
-            i18nService.init($scope.language);
-        });
-
-        //init momentJS i18n, default english
-        var i18nService = new I18nService();
-        i18nService.init($scope.language);
-
-        //progress bar
-        $scope.displayProgressBar = 0;
-        $scope.displayProgressActive = 'active'; //Bootstrap active effect for progress bar
 
         if ($element.html().trim().length === 0) {
           $element.append($compile('<span>' + $interpolate.startSymbol() + 'millis' + $interpolate.endSymbol() + '</span>')($scope));
@@ -157,7 +134,7 @@ var timerModule = angular.module('timer', [])
             $scope.millis = moment().diff(moment($scope.startTimeAttr));
           }
 
-          timeUnits = i18nService.getTimeUnits($scope.millis);
+          timeUnits = $scope.timeUnits;
 
           // compute time values based on maxTimeUnit specification
           if (!$scope.maxTimeUnit || $scope.maxTimeUnit === 'day') {
@@ -263,18 +240,16 @@ var timerModule = angular.module('timer', [])
         calculateTimeUnits();
 
         var tick = function tick() {
-          var typeTimer = null; // countdown or endTimeAttr
+
           $scope.millis = moment().diff($scope.startTime);
           var adjustment = $scope.millis % 1000;
 
           if ($scope.endTimeAttr) {
-            typeTimer = $scope.endTimeAttr;
             $scope.millis = moment($scope.endTime).diff(moment());
             adjustment = $scope.interval - $scope.millis % 1000;
           }
 
           if ($scope.countdownattr) {
-            typeTimer = $scope.countdownattr;
             $scope.millis = $scope.countdown * 1000;
           }
 
@@ -306,15 +281,6 @@ var timerModule = angular.module('timer', [])
               $scope.$eval($scope.finishCallback);
             }
           }
-
-          if(typeTimer !== null){
-            //calculate progress bar
-            $scope.progressBar = progressBarService.calculateProgressBar($scope.startTime, $scope.millis, $scope.endTime, $scope.countdownattr);
-
-            if($scope.progressBar === 100){
-              $scope.displayProgressActive = ''; //No more Bootstrap active effect
-            }
-          }
         };
 
         if ($scope.autoStart === undefined || $scope.autoStart === true) {
@@ -322,69 +288,8 @@ var timerModule = angular.module('timer', [])
         }
       }]
     };
-    }]);
-
-/* commonjs package manager support (eg componentjs) */
-if (typeof module !== "undefined" && typeof exports !== "undefined" && module.exports === exports){
-  module.exports = timerModule;
-}
-
-var app = angular.module('timer');
-
-app.factory('I18nService', function() {
-
-    var I18nService = function() {};
-
-    I18nService.prototype.language = 'en';
-    I18nService.prototype.timeHumanizer = {};
-
-    I18nService.prototype.init = function init(lang){
-        this.language = lang;
-        //moment init
-        moment.locale(this.language); //@TODO maybe to remove, it should be handle by the user's application itself, and not inside the directive
-
-        //human duration init, using it because momentjs does not allow accurate time (
-        // momentJS: a few moment ago, human duration : 4 seconds ago
-        this.timeHumanizer = humanizeDuration.humanizer({
-            language: this.language,
-            halfUnit:false
-        });
-    };
-
-    /**
-     * get time with units from momentJS i18n
-     * @param {int} millis
-     * @returns {{millis: string, seconds: string, minutes: string, hours: string, days: string, months: string, years: string}}
-     */
-    I18nService.prototype.getTimeUnits = function getTimeUnits(millis) {
-        var diffFromAlarm = Math.round(millis/1000) * 1000; //time in milliseconds, get rid of the last 3 ms value to avoid 2.12 seconds display
-
-        var time = {};
-
-        if (typeof this.timeHumanizer != 'undefined'){
-            time = {
-                'millis' : this.timeHumanizer(diffFromAlarm, { units: ["milliseconds"] }),
-                'seconds' : this.timeHumanizer(diffFromAlarm, { units: ["seconds"] }),
-                'minutes' : this.timeHumanizer(diffFromAlarm, { units: ["minutes", "seconds"] }) ,
-                'hours' : this.timeHumanizer(diffFromAlarm, { units: ["hours", "minutes", "seconds"] }) ,
-                'days' : this.timeHumanizer(diffFromAlarm, { units: ["days", "hours", "minutes", "seconds"] }) ,
-                'months' : this.timeHumanizer(diffFromAlarm, { units: ["months", "days", "hours", "minutes", "seconds"] }) ,
-                'years' : this.timeHumanizer(diffFromAlarm, { units: ["years", "months", "days", "hours", "minutes", "seconds"] })
-            };
-        }
-        else {
-            console.error('i18nService has not been initialized. You must call i18nService.init("en") for example');
-        }
-
-        return time;
-    };
-
-    return I18nService;
-});
-
-var app = angular.module('timer');
-
-app.factory('progressBarService', function() {
+  }]);
+angular.module('timer').factory('progressBarService', function() {
 
   var ProgressBarService = function() {};
 
